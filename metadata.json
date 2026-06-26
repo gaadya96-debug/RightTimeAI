@@ -1,0 +1,6 @@
+{
+  "name": "Gupta's RightTime Live Map",
+  "description": "Real-time urban intelligence system helping users decide when to visit places based on crowd density, air quality, and behavioral patterns.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

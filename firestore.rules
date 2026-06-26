@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for Place
+    function isValidPlace(data) {
+      return data.keys().hasAll(['id', 'name', 'category', 'crowdDensity', 'aqi'])
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 255
+        && data.crowdDensity is number && data.crowdDensity >= 0 && data.crowdDensity <= 100
+        && data.aqi is number && data.aqi >= 0 && data.aqi <= 500;
+    }
+
+    // Validation for Report
+    function isValidReport(data) {
+      return data.keys().hasAll(['id', 'placeId', 'userId', 'timestamp', 'level'])
+        && data.id is string && data.id.size() <= 128
+        && data.placeId is string && data.placeId.size() <= 128
+        && data.userId == request.auth.uid
+        && data.timestamp is number
+        && data.level in ['LOW', 'MODERATE', 'HIGH'];
+    }
+
+    // Match Places
+    match /places/{placeId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidPlace(incoming());
+    }
+
+    // Match Reports
+    match /reports/{reportId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidReport(incoming());
+      allow update, delete: if false; // Reports are immutable
+    }
+  }
+}
